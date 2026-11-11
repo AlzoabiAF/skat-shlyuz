@@ -2,6 +2,11 @@
 import unittest
 
 
+class Direction(int):
+    """Подкласс int для проверки требования точного типа аргумента."""
+
+
+
 class SkateLockAcceptance(unittest.TestCase):
     def setUp(self):
         from skate_lock import SkateLock
@@ -81,6 +86,8 @@ class SkateLockAcceptance(unittest.TestCase):
             self.assert_state(3, 5, 6, 3)
         self.assertIsNone(self.capsule.equalize(-1))
         self.assert_state(3, 2, 6, 3)
+        self.assertIsNone(self.capsule.refill())
+        self.assert_state(3, 2, 6, 3)
         self.assertIsNone(self.capsule.cross(-1))
         self.assert_state(2, 2, 6, 4)
 
@@ -100,10 +107,14 @@ class SkateLockAcceptance(unittest.TestCase):
         self.travel(1)
         self.assert_rejected(RuntimeError, self.capsule.refill)
         self.assert_state(1, 4, 1, 1)
+        self.travel(1)
+        self.assert_state(2, 2, 2, 2)
+        self.assert_rejected(RuntimeError, self.capsule.refill)
+        self.assert_state(2, 2, 2, 2)
 
     def test_pt11_direction_and_canal_boundary(self):
         for command in (self.capsule.equalize, self.capsule.cross):
-            for direction in (0, 2, -2, True, 1.0, "1", None):
+            for direction in (0, 2, -2, True, 1.0, "1", None, Direction(1), Direction(-1)):
                 with self.subTest(command=command.__name__, direction=direction):
                     self.assert_rejected(ValueError, command, direction)
             self.assert_rejected(RuntimeError, command, -1)
@@ -142,3 +153,11 @@ class SkateLockAcceptance(unittest.TestCase):
                 for state in expected_return:
                     self.travel(-1)
                     self.assert_state(*state)
+
+    def test_pt14_refill_preserves_prepared_departure(self):
+        self.assertIsNone(self.capsule.equalize(1))
+        self.assert_state(0, 4, 1, 0)
+        self.assertIsNone(self.capsule.refill())
+        self.assert_state(0, 4, 6, 0)
+        self.assertIsNone(self.capsule.cross(1))
+        self.assert_state(1, 4, 6, 1)
