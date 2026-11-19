@@ -46,6 +46,10 @@ class SkateLockAcceptance(unittest.TestCase):
         self.assert_state(0, 4, 1, 0)
         self.assertIsNone(self.capsule.cross(direction=1))
         self.assert_state(1, 4, 1, 1)
+        self.assertIsNone(self.capsule.equalize(direction=-1))
+        self.assert_state(1, 1, 2, 1)
+        self.assertIsNone(self.capsule.cross(direction=-1))
+        self.assert_state(0, 1, 2, 2)
 
     def test_pt03_repeat_preparation(self):
         for _ in range(2):
@@ -100,6 +104,8 @@ class SkateLockAcceptance(unittest.TestCase):
         self.assert_state(2, 2, 3, 2)
         self.assertIsNone(self.capsule.equalize(1))
         self.assert_state(2, 5, 0, 2)
+        self.assertIsNone(self.capsule.equalize(1))
+        self.assert_state(2, 5, 0, 2)
         self.assertIsNone(self.capsule.cross(1))
         self.assert_state(3, 5, 0, 3)
 
@@ -119,6 +125,17 @@ class SkateLockAcceptance(unittest.TestCase):
                     self.assert_rejected(ValueError, command, direction)
             self.assert_rejected(RuntimeError, command, -1)
         self.assert_state(0, 1, 4, 0)
+
+        for method_name in ("equalize", "cross"):
+            for direction in (0, 2, -2, True, 1.0, "1", None, Direction(1), Direction(-1)):
+                with self.subTest(method=method_name, direction=direction, section=1):
+                    self.capsule = type(self.capsule)()
+                    self.travel(1)
+                    self.assert_state(1, 4, 1, 1)
+                    self.assert_rejected(
+                        ValueError, getattr(self.capsule, method_name), direction
+                    )
+                    self.assert_state(1, 4, 1, 1)
 
     def test_pt12_snapshots_and_instances_are_independent(self):
         other = type(self.capsule)()
